@@ -8,6 +8,7 @@ import (
 	ctxo "github.com/deislabs/oras/pkg/context"
 	"github.com/deislabs/oras/pkg/oras"
 
+	"github.com/containerd/containerd/reference"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,7 @@ type pullOptions struct {
 func pullCmd() *cobra.Command {
 	var opts pullOptions
 	cmd := &cobra.Command{
-		Use:   "pull name[:tag|@digest]",
+		Use:   "pull <name:tag|name@digest>",
 		Short: "Pull files from remote registry",
 		Long: `Pull files from remote registry
 
@@ -84,6 +85,9 @@ func runPull(opts pullOptions) error {
 	store.AllowPathTraversalOnWrite = opts.pathTraversal
 	desc, files, err := oras.Pull(ctx, resolver, opts.targetRef, store, oras.WithAllowedMediaTypes(opts.allowedMediaTypes))
 	if err != nil {
+		if err == reference.ErrObjectRequired {
+			return fmt.Errorf("image reference format is invalid. Please specify <name:tag|name@digest>")
+		}
 		return err
 	}
 
